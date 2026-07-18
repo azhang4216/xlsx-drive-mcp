@@ -1,0 +1,46 @@
+[project]
+name = "xlsx-drive-mcp"
+version = "0.1.0"
+description = "MCP server for reading and writing xlsx files on Google Drive"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+keywords = [
+    "google-drive", "excel", "xlsx", "openpyxl", "mcp",
+    "model-context-protocol", "claude", "ai-agent", "spreadsheet"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastmcp>=3.0.0",
+    "openpyxl>=3.1.0",
+    "google-api-python-client>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-auth-httplib2>=0.2.0",
+]
+
+[project.scripts]
+xlsx-drive-mcp = "xlsx_drive_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/YOUR_GITHUB_USERNAME/xlsx-drive-mcp"
+Issues = "https://github.com/YOUR_GITHUB_USERNAME/xlsx-drive-mcp/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xlsx_drive_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-mock"]

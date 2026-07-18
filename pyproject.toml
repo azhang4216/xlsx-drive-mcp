@@ -28,8 +28,8 @@ dependencies = [
 xlsx-drive-mcp = "xlsx_drive_mcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/angep/xlsx-drive-mcp"
-Issues = "https://github.com/angep/xlsx-drive-mcp/issues"
+Homepage = "https://github.com/azhang4216/xlsx-drive-mcp"
+Issues = "https://github.com/azhang4216/xlsx-drive-mcp/issues"
 
 [build-system]
 requires = ["hatchling"]

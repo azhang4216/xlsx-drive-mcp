@@ -34,5 +34,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         # No API token needed -- uses OIDC Trusted Publisher
         # One-time setup: configure Trusted Publisher at https://pypi.org/manage/account/publishing/
-        # Settings: owner=YOUR_GITHUB_USERNAME, repo=xlsx-drive-mcp,
+        # Settings: owner=azhang4216, repo=xlsx-drive-mcp,
         #            workflow=publish.yml, environment=pypi

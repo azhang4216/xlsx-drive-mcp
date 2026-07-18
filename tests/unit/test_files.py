@@ -1,7 +1,4 @@
-import io
 import openpyxl
-import pytest
-from unittest.mock import MagicMock, patch
 from xlsx_drive_mcp.tools.files import (
     _build_list_query,
     _get_xlsx_info_from_wb,

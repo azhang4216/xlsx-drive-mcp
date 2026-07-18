@@ -93,6 +93,8 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         Dimensions are determined by scanning actual data, not openpyxl's
         max_row/max_column (which are unreliable after cells are cleared).
         """
+        if not file_id or not file_id.strip():
+            raise ValueError("file_id must be a non-empty string")
         content, _ = download_xlsx(service, file_id)
         wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
         return _get_xlsx_info_from_wb(wb)
@@ -123,5 +125,7 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         The user has 30 days to recover the file from the Drive trash UI.
         Use with caution.
         """
+        if not file_id or not file_id.strip():
+            raise ValueError("file_id must be a non-empty string")
         service.files().update(fileId=file_id, body={"trashed": True}).execute()
         return {"deleted": True, "file_id": file_id}

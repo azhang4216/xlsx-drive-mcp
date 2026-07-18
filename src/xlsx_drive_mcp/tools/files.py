@@ -123,5 +123,5 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         The user has 30 days to recover the file from the Drive trash UI.
         Use with caution.
         """
-        service.files().trash(fileId=file_id).execute()
+        service.files().update(fileId=file_id, body={"trashed": True}).execute()
         return {"deleted": True, "file_id": file_id}

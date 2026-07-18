@@ -53,15 +53,6 @@ def _expand_rows(rows) -> list:
     return list(rows)
 
 
-def _get_color_str(color_obj) -> Optional[str]:
-    """Extract ARGB hex string from an openpyxl Color object, or None."""
-    if color_obj is None:
-        return None
-    if hasattr(color_obj, "type"):
-        if color_obj.type == "rgb" and color_obj.rgb not in ("00000000", "FFFFFFFF", "FF000000") or color_obj.rgb:
-            return color_obj.rgb if color_obj.rgb != "00000000" else None
-    return None
-
 
 def _read_cell_format(cell, ws) -> dict:
     """Extract formatting dict from a single openpyxl cell."""
@@ -137,20 +128,20 @@ def _apply_format_to_range(ws, cell_range: str, **kwargs) -> None:
                 cell.number_format = kwargs["number_format"]
             if "border" in kwargs:
                 parsed = _parse_border_input(kwargs["border"])
+                existing_border = copy(cell.border) if cell.border else Border()
 
-                def make_side(style_val):
+                def _make_side(style_val, existing_side):
                     if style_val == "none":
                         return Side(style=None)
                     if style_val is None:
-                        return copy(getattr(cell.border, "top", Side()))  # unchanged handled per-side
+                        return copy(existing_side) if existing_side else Side()
                     return Side(style=style_val)
 
-                existing_border = copy(cell.border) if cell.border else Border()
                 cell.border = Border(
-                    top=make_side(parsed.get("top")) if "top" in parsed else existing_border.top,
-                    bottom=make_side(parsed.get("bottom")) if "bottom" in parsed else existing_border.bottom,
-                    left=make_side(parsed.get("left")) if "left" in parsed else existing_border.left,
-                    right=make_side(parsed.get("right")) if "right" in parsed else existing_border.right,
+                    top=_make_side(parsed.get("top"), existing_border.top) if "top" in parsed else existing_border.top,
+                    bottom=_make_side(parsed.get("bottom"), existing_border.bottom) if "bottom" in parsed else existing_border.bottom,
+                    left=_make_side(parsed.get("left"), existing_border.left) if "left" in parsed else existing_border.left,
+                    right=_make_side(parsed.get("right"), existing_border.right) if "right" in parsed else existing_border.right,
                 )
 
 
@@ -224,12 +215,13 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         if sheet_name not in wb.sheetnames:
             raise KeyError(f"Sheet '{sheet_name}' not found. Available: {wb.sheetnames}")
         ws = wb[sheet_name]
-        for col in _expand_columns(columns):
+        cols = _expand_columns(columns)
+        for col in cols:
             ws.column_dimensions[col].width = width
         buf = io.BytesIO()
         wb.save(buf)
         upload_xlsx(service, file_id, buf.getvalue(), rev_id)
-        return {"set_columns": _expand_columns(columns), "width": width}
+        return {"set_columns": cols, "width": width}
 
     @mcp.tool()
     def set_row_height(
@@ -241,12 +233,13 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         if sheet_name not in wb.sheetnames:
             raise KeyError(f"Sheet '{sheet_name}' not found. Available: {wb.sheetnames}")
         ws = wb[sheet_name]
-        for row in _expand_rows(rows):
+        expanded_rows = _expand_rows(rows)
+        for row in expanded_rows:
             ws.row_dimensions[row].height = height
         buf = io.BytesIO()
         wb.save(buf)
         upload_xlsx(service, file_id, buf.getvalue(), rev_id)
-        return {"set_rows": _expand_rows(rows), "height": height}
+        return {"set_rows": expanded_rows, "height": height}
 
     @mcp.tool()
     def merge_cells(file_id: str, sheet_name: str, cell_range: str) -> dict:

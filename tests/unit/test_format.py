@@ -96,3 +96,14 @@ def test_apply_format_bold(wb):
     _apply_format_to_range(wb["Sheet1"], "A2:B2", bold=True)
     assert wb["Sheet1"]["A2"].font.bold is True
     assert wb["Sheet1"]["B2"].font.bold is True
+
+
+def test_apply_format_border_null_preserves_side(wb):
+    """border={bottom: None} should leave the bottom border unchanged."""
+    from openpyxl.styles import Border, Side
+    thin = Side(style="thin")
+    medium = Side(style="medium")
+    wb["Sheet1"]["D1"].border = Border(top=thin, bottom=medium)
+    _apply_format_to_range(wb["Sheet1"], "D1", border={"top": "thick", "bottom": None})
+    assert wb["Sheet1"]["D1"].border.top.border_style == "thick"
+    assert wb["Sheet1"]["D1"].border.bottom.border_style == "medium"  # unchanged

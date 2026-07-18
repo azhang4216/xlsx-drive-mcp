@@ -7,5 +7,4 @@ build/
 venv/
 .env
 *.env
-~/.xlsx-drive-mcp/
 .pytest_cache/

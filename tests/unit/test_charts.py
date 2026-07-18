@@ -41,6 +41,8 @@ def test_build_pie_chart(data_wb):
 def test_build_scatter_chart(data_wb):
     chart = _build_chart(data_wb["Sheet1"], "scatter", "marker", "B2:C4", None, None, None)
     assert chart is not None
+    from openpyxl.chart.series import XYSeries
+    assert all(isinstance(s, XYSeries) for s in chart.series)
 
 
 def test_invalid_chart_type_raises(data_wb):

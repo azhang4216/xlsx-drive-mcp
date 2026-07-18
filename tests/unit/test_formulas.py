@@ -27,4 +27,4 @@ def test_blocked_functions_case_insensitive():
 
 
 def test_blocked_functions_list_nonempty():
-    assert len(BLOCKED_FUNCTIONS) >= 6
+    assert len(BLOCKED_FUNCTIONS) >= 7

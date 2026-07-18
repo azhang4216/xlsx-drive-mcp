@@ -5,7 +5,8 @@ import openpyxl
 from fastmcp import FastMCP
 from googleapiclient.discovery import Resource
 from openpyxl.chart import BarChart, LineChart, PieChart, ScatterChart, Reference, Series
-from openpyxl.chart.series import SeriesLabel
+from openpyxl.chart.data_source import AxDataSource, NumDataSource, NumRef
+from openpyxl.chart.series import SeriesLabel, XYSeries
 from openpyxl.utils import range_boundaries, get_column_letter
 
 from ..drive import download_xlsx, upload_xlsx, validate_cell_range
@@ -13,10 +14,10 @@ from ..drive import download_xlsx, upload_xlsx, validate_cell_range
 CHART_TYPES = {"bar", "line", "pie", "scatter"}
 
 _CHART_SUBTYPES = {
-    "bar": {"col", "bar"},
-    "line": {"line", "smooth"},
-    "pie": {"pie"},
-    "scatter": {"marker", "smooth_line", "straight_line"},
+    "bar": ["col", "bar"],
+    "line": ["line", "smooth"],
+    "pie": ["pie"],
+    "scatter": ["marker", "smooth_line", "straight_line"],
 }
 
 
@@ -41,20 +42,38 @@ def _build_chart(ws, chart_type: str, chart_subtype: str, values_range: str,
     if title:
         chart.title = title
 
-    # Add data series -- each column in values_range is one series
-    for col_idx in range(min_col, max_col + 1):
-        values_ref = Reference(ws, min_col=col_idx, min_row=min_row, max_row=max_row)
-        series = Series(values_ref)
-        if series_names and isinstance(series_names, list):
+    # Add data series -- each column in values_range is one series.
+    # For scatter charts, the first column is x-values shared across all series;
+    # each remaining column becomes a separate XYSeries with yVal.
+    if chart_type == "scatter":
+        x_ref = Reference(ws, min_col=min_col, min_row=min_row, max_row=max_row)
+        xvals = AxDataSource(numRef=NumRef(f=x_ref))
+        y_cols = range(min_col + 1, max_col + 1) if max_col > min_col else range(min_col, max_col + 1)
+        for s_idx, col_idx in enumerate(y_cols):
+            y_ref = Reference(ws, min_col=col_idx, min_row=min_row, max_row=max_row)
+            yvals = NumDataSource(NumRef(f=y_ref))
+            series = XYSeries(xVal=xvals, yVal=yvals, idx=s_idx, order=s_idx)
+            if series_names and isinstance(series_names, list):
+                if s_idx < len(series_names):
+                    series.title = SeriesLabel(v=series_names[s_idx])
+            elif series_names and isinstance(series_names, str):
+                sc, sr, ec, er = range_boundaries(series_names.upper())
+                name_ref = Reference(ws, min_col=sc + s_idx, min_row=sr)
+                series.title = name_ref
+            chart.series.append(series)
+    else:
+        for col_idx in range(min_col, max_col + 1):
+            values_ref = Reference(ws, min_col=col_idx, min_row=min_row, max_row=max_row)
+            series = Series(values_ref)
             s_idx = col_idx - min_col
-            if s_idx < len(series_names):
-                series.title = SeriesLabel(v=series_names[s_idx])
-        elif series_names and isinstance(series_names, str):
-            # series_names is a cell range like "B1:D1"
-            sc, sr, ec, er = range_boundaries(series_names.upper())
-            name_ref = Reference(ws, min_col=sc + (col_idx - min_col), min_row=sr)
-            series.title = name_ref
-        chart.series.append(series)
+            if series_names and isinstance(series_names, list):
+                if s_idx < len(series_names):
+                    series.title = SeriesLabel(v=series_names[s_idx])
+            elif series_names and isinstance(series_names, str):
+                sc, sr, ec, er = range_boundaries(series_names.upper())
+                name_ref = Reference(ws, min_col=sc + s_idx, min_row=sr)
+                series.title = name_ref
+            chart.series.append(series)
 
     if category_range:
         cat_min_col, cat_min_row, _, cat_max_row = range_boundaries(category_range.upper())
@@ -98,13 +117,16 @@ def register_tools(mcp: FastMCP, service: Resource) -> None:
         series_names: list of series label strings, or a cell range like 'B1:D1'.
         anchor_cell: top-left cell for chart placement, e.g. 'E2'.
         """
+        if chart_type not in CHART_TYPES:
+            raise ValueError(f"Invalid chart_type '{chart_type}'. Must be one of: {sorted(CHART_TYPES)}")
+
         validate_cell_range(values_range)
         if category_range:
             validate_cell_range(category_range)
 
-        subtypes = _CHART_SUBTYPES.get(chart_type, set())
+        subtypes = _CHART_SUBTYPES.get(chart_type)
         if chart_subtype is None:
-            chart_subtype = next(iter(subtypes))  # default = first
+            chart_subtype = subtypes[0]  # default = first
         elif chart_subtype not in subtypes:
             raise ValueError(
                 f"Invalid chart_subtype '{chart_subtype}' for chart_type '{chart_type}'. "

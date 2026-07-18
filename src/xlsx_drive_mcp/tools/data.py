@@ -1,5 +1,4 @@
 import io
-from typing import Optional
 
 import openpyxl
 from fastmcp import FastMCP
@@ -49,22 +48,16 @@ def _append_rows(wb: openpyxl.Workbook, sheet_name: str, rows: list) -> None:
 
 
 def _clear_range(wb: openpyxl.Workbook, sheet_name: str, cell_range: str) -> None:
+    from openpyxl.worksheet.cell_range import CellRange
     ws = wb[sheet_name]
-    merged = {str(r) for r in ws.merged_cells.ranges}  # noqa: F841 — kept per spec
+    clear_cr = CellRange(cell_range.upper())
+    for merge_range in ws.merged_cells.ranges:
+        if not merge_range.isdisjoint(clear_cr):
+            raise ValueError(
+                f"Range {cell_range} intersects merged region {merge_range}. "
+                f"Call unmerge_cells first."
+            )
     min_col, min_row, max_col, max_row = range_boundaries(cell_range.upper())
-    for r in range(min_row, max_row + 1):
-        for c in range(min_col, max_col + 1):
-            addr = f"{get_column_letter(c)}{r}"
-            for merge_range in ws.merged_cells.ranges:
-                if ws[addr].coordinate in [
-                    ws.cell(row=mr, column=mc).coordinate
-                    for mr in range(merge_range.min_row, merge_range.max_row + 1)
-                    for mc in range(merge_range.min_col, merge_range.max_col + 1)
-                ]:
-                    raise ValueError(
-                        f"Cell {addr} is part of a merged region {merge_range}. "
-                        f"Call unmerge_cells first."
-                    )
     for row in ws.iter_rows(min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col):
         for cell in row:
             cell.value = None

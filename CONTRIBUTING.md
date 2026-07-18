@@ -3,7 +3,7 @@
 ## Local dev setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/xlsx-drive-mcp
+git clone https://github.com/angep/xlsx-drive-mcp
 cd xlsx-drive-mcp
 pip install -e ".[dev]"
 python tests/fixtures/create_fixtures.py  # generate test xlsx files
